@@ -1,1 +1,1 @@
-include ':ultimaterecyclerview'
+include ':ultimaterecyclerview', ':sample'
