@@ -13,8 +13,7 @@ import com.kevin.ultimaterecyclerview.pulltorefresh.PullToRefreshBase;
 import com.kevin.ultimaterecyclerview.sample.adapter.HomeFunctionAdapter;
 import com.kevin.ultimaterecyclerview.sample.bean.HomeFunction;
 import com.kevin.ultimaterecyclerview.sample.util.LocalFileUtils;
-import com.kevin.ultimaterecyclerview.view.WrapAdapter;
-import com.kevin.ultimaterecyclerview.view.WrapRecyclerView;
+import com.kevin.wraprecyclerview.WrapRecyclerView;
 
 import java.util.List;
 
@@ -23,8 +22,7 @@ public class MainActivity extends AppCompatActivity {
     UltimateRecyclerView mUltimateRecyclerView;
     WrapRecyclerView mWrapRecyclerView;
     HomeFunctionAdapter mAdapter;
-    WrapAdapter mWrapAdapter;
-
+    
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -75,7 +73,6 @@ public class MainActivity extends AppCompatActivity {
                 List<HomeFunction> functionList = new Gson().fromJson(json, new TypeToken<List<HomeFunction>>() {
                 }.getType());
                 mAdapter.addToLast(functionList);
-                mWrapAdapter.notifyDataSetChanged();
             }
 
             // Call onRefreshComplete when the list has been refreshed.
@@ -98,8 +95,6 @@ public class MainActivity extends AppCompatActivity {
         mWrapRecyclerView.setItemAnimator(new DefaultItemAnimator());
         mAdapter = new HomeFunctionAdapter(this);
         mWrapRecyclerView.setAdapter(mAdapter);
-        // 获取包装类适配器，因为要用它去刷新数据
-        mWrapAdapter = mWrapRecyclerView.getAdapter();
 
         initRecyclerData();
     }
@@ -112,6 +107,6 @@ public class MainActivity extends AppCompatActivity {
         List<HomeFunction> functionList = new Gson().fromJson(json, new TypeToken<List<HomeFunction>>() {
         }.getType());
         mAdapter.setItemLists(functionList);
-        mWrapAdapter.notifyDataSetChanged();
+//        mWrapAdapter.notifyDataSetChanged();
     }
 }

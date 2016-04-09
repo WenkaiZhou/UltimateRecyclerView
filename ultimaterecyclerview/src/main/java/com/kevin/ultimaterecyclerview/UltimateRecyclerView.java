@@ -7,7 +7,7 @@ import android.util.Log;
 import android.view.View;
 
 import com.kevin.ultimaterecyclerview.pulltorefresh.PullToRefreshBase;
-import com.kevin.ultimaterecyclerview.view.WrapRecyclerView;
+import com.kevin.wraprecyclerview.WrapRecyclerView;
 
 /**
  * 版权所有：XXX有限公司

@@ -10,7 +10,7 @@ import android.widget.TextView;
 
 import com.kevin.ultimaterecyclerview.sample.bean.HomeFunction;
 import com.kevin.ultimaterecyclerview.sample.R;
-import com.kevin.ultimaterecyclerview.view.BaseRecyclerAdapter;
+import com.kevin.wraprecyclerview.BaseRecyclerAdapter;
 
 import java.util.LinkedList;
 
