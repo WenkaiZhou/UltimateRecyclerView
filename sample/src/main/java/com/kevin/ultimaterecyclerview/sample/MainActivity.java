@@ -8,8 +8,8 @@ import android.support.v7.widget.LinearLayoutManager;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import com.handmark.pulltorefresh.library.PullToRefreshBase;
 import com.kevin.ultimaterecyclerview.UltimateRecyclerView;
-import com.kevin.ultimaterecyclerview.pulltorefresh.PullToRefreshBase;
 import com.kevin.ultimaterecyclerview.sample.adapter.HomeFunctionAdapter;
 import com.kevin.ultimaterecyclerview.sample.bean.HomeFunction;
 import com.kevin.ultimaterecyclerview.sample.util.LocalFileUtils;
@@ -22,7 +22,7 @@ public class MainActivity extends AppCompatActivity {
     UltimateRecyclerView mUltimateRecyclerView;
     WrapRecyclerView mWrapRecyclerView;
     HomeFunctionAdapter mAdapter;
-    
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -107,6 +107,5 @@ public class MainActivity extends AppCompatActivity {
         List<HomeFunction> functionList = new Gson().fromJson(json, new TypeToken<List<HomeFunction>>() {
         }.getType());
         mAdapter.setItemLists(functionList);
-//        mWrapAdapter.notifyDataSetChanged();
     }
 }
