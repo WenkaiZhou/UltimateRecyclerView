@@ -272,15 +272,14 @@ public class UltimateRecyclerView extends PullToRefreshBase<WrapRecyclerView> {
             Constructor c = headerLayout.getClass().getDeclaredConstructor(new Class[]{Context.class});
             LoadingLayoutBase mHeaderLayout = (LoadingLayoutBase)c.newInstance(new Object[]{getContext()});
             if(null != mHeaderLayout) {
-//                mRefreshableView.removeHeaderView(mLvHeaderLoadingFrame);
+                mLvHeaderLoadingFrame.removeAllViews();
                 final FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT,
                         FrameLayout.LayoutParams.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL);
 
-                mLvHeaderLoadingFrame = new FrameLayout(getContext());
                 mHeaderLoadingView = mHeaderLayout;
                 mHeaderLoadingView.setVisibility(View.GONE);
                 mLvHeaderLoadingFrame.addView(mHeaderLoadingView, lp);
-                mRefreshableView.addHeaderView(mLvHeaderLoadingFrame);
+                mRefreshableView.getAdapter().notifyDataSetChanged();
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -295,14 +294,14 @@ public class UltimateRecyclerView extends PullToRefreshBase<WrapRecyclerView> {
             Constructor c = footerLayout.getClass().getDeclaredConstructor(new Class[]{Context.class});
             LoadingLayoutBase mFooterLayout = (LoadingLayoutBase)c.newInstance(new Object[]{getContext()});
             if(null != mFooterLayout) {
-//                mRefreshableView.removeFooterView(mLvFooterLoadingFrame);
+                mLvFooterLoadingFrame.removeAllViews();
                 final FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT,
                         FrameLayout.LayoutParams.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL);
 
-                mLvFooterLoadingFrame = new FrameLayout(getContext());
                 mFooterLoadingView = mFooterLayout;
                 mFooterLoadingView.setVisibility(View.GONE);
                 mLvFooterLoadingFrame.addView(mFooterLoadingView, lp);
+                mRefreshableView.getAdapter().notifyDataSetChanged();
             }
         } catch (Exception e) {
             e.printStackTrace();
