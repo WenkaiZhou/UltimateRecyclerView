@@ -1,13 +1,24 @@
 package com.kevin.ultimaterecyclerview;
 
 import android.content.Context;
+import android.content.res.TypedArray;
+import android.graphics.Canvas;
 import android.support.v7.widget.RecyclerView;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.FrameLayout;
 
+import com.handmark.pulltorefresh.library.LoadingLayoutBase;
+import com.handmark.pulltorefresh.library.LoadingLayoutProxy;
 import com.handmark.pulltorefresh.library.PullToRefreshBase;
+import com.kevin.wraprecyclerview.WrapAdapter;
 import com.kevin.wraprecyclerview.WrapRecyclerView;
+
+import java.lang.reflect.Constructor;
 
 /**
  * 版权所有：XXX有限公司
@@ -22,12 +33,21 @@ import com.kevin.wraprecyclerview.WrapRecyclerView;
  */
 public class UltimateRecyclerView extends PullToRefreshBase<WrapRecyclerView> {
 
+    private LoadingLayoutBase mHeaderLoadingView;
+    private LoadingLayoutBase mFooterLoadingView;
+
+    private FrameLayout mLvHeaderLoadingFrame;
+    private FrameLayout mLvFooterLoadingFrame;
+
+    private boolean mURecyclerViewExtrasEnabled;
+
     public UltimateRecyclerView(Context context) {
         super(context);
     }
 
     public UltimateRecyclerView(Context context, AttributeSet attrs) {
         super(context, attrs);
+        init(context, attrs);
     }
 
     public UltimateRecyclerView(Context context, Mode mode) {
@@ -38,16 +58,255 @@ public class UltimateRecyclerView extends PullToRefreshBase<WrapRecyclerView> {
         super(context, mode, style);
     }
 
+    /**
+     * 获取刷新方向
+     */
     @Override
     public final Orientation getPullToRefreshScrollDirection() {
         return Orientation.VERTICAL;
     }
 
     @Override
-    protected WrapRecyclerView createRefreshableView(Context context,
-                                                 AttributeSet attrs) {
-        WrapRecyclerView recyclerView = new WrapRecyclerView(context, attrs);
+    protected void onRefreshing(final boolean doScroll) {
+        /**
+         * If we're not showing the Refreshing view, or the list is empty, the
+         * the header/footer views won't show so we use the normal method.
+         */
+        WrapAdapter adapter = mRefreshableView.getAdapter();
+        if (!mURecyclerViewExtrasEnabled || !getShowViewWhileRefreshing() || null == adapter || adapter.getItemCount() == 0) {
+            super.onRefreshing(doScroll);
+            return;
+        }
+
+        super.onRefreshing(false);
+
+        final LoadingLayoutBase origLoadingView, recyclerViewLoadingView, oppositeRecyclerViewLoadingView;
+        final int scrollToPosition, scrollToY;
+
+        switch (getCurrentMode()) {
+            case MANUAL_REFRESH_ONLY:
+            case PULL_FROM_END:
+                origLoadingView = getFooterLayout();
+                recyclerViewLoadingView = mFooterLoadingView;
+                oppositeRecyclerViewLoadingView = mHeaderLoadingView;
+                scrollToPosition = mRefreshableView.getBottom();
+                scrollToY = getScrollY() - getFooterSize();
+                break;
+            case PULL_FROM_START:
+            default:
+                origLoadingView = getHeaderLayout();
+                recyclerViewLoadingView = mHeaderLoadingView;
+                oppositeRecyclerViewLoadingView = mFooterLoadingView;
+                scrollToPosition = mRefreshableView.getTop();
+                scrollToY = getScrollY() + getHeaderSize();
+                break;
+        }
+
+        Log.d("onRefreshing", "scrollToY=" + scrollToY);
+        Log.d("onRefreshing", "doScroll=" + doScroll);
+
+        // Hide our original Loading View
+        origLoadingView.reset();
+        origLoadingView.hideAllViews();
+
+        // Make sure the opposite end is hidden too
+        oppositeRecyclerViewLoadingView.setVisibility(View.GONE);
+
+        // Show the RecyclerView Loading View and set it to refresh.
+        recyclerViewLoadingView.setVisibility(View.VISIBLE);
+        recyclerViewLoadingView.refreshing();
+
+        if (doScroll) {
+            // We need to disable the automatic visibility changes for now
+            disableLoadingLayoutVisibilityChanges();
+
+            // We scroll slightly so that the WrapRecyclerView's header/footer is at the
+            // same Y position as our normal header/footer
+            setHeaderScroll(scrollToY);
+
+            // Make sure the RecyclerView is scrolled to show the loading
+            // header/footer
+            mRefreshableView.smoothScrollToPosition(scrollToPosition);
+
+            // Smooth scroll as normal
+            smoothScrollTo(0);
+        }
+    }
+
+    @Override
+    protected void onReset() {
+        /**
+         * If the extras are not enabled, just call up to super and return.
+         */
+        if (!mURecyclerViewExtrasEnabled) {
+            super.onReset();
+            return;
+        }
+
+        final LoadingLayoutBase originalLoadingLayout, recyclerViewLoadingLayout;
+        final int scrollToHeight, selection;
+        final boolean scrollLvToEdge;
+
+        WrapAdapter adapter = mRefreshableView.getAdapter();
+
+        switch (getCurrentMode()) {
+            case MANUAL_REFRESH_ONLY:
+            case PULL_FROM_END:
+                originalLoadingLayout = getFooterLayout();
+                recyclerViewLoadingLayout = mFooterLoadingView;
+                selection = adapter.getItemCount() - 1;
+                scrollToHeight = getFooterSize();
+                scrollLvToEdge = Math.abs(getLastVisiblePosition() - selection) <= 1;
+                break;
+            case PULL_FROM_START:
+            default:
+                originalLoadingLayout = getHeaderLayout();
+                recyclerViewLoadingLayout = mHeaderLoadingView;
+                scrollToHeight = -getHeaderSize();
+                selection = 0;
+                scrollLvToEdge = Math.abs(getFirstVisiblePosition() - selection) <= 1;
+                break;
+        }
+
+        // If the RecyclerView header loading layout is showing, then we need to
+        // flip so that the original one is showing instead
+        if (recyclerViewLoadingLayout.getVisibility() == View.VISIBLE) {
+
+            // Set our Original View to Visible
+            originalLoadingLayout.showInvisibleViews();
+
+            // Hide the RecyclerView Header/Footer
+            recyclerViewLoadingLayout.setVisibility(View.GONE);
+
+            /**
+             * Scroll so the View is at the same Y as the RecyclerView
+             * header/footer, but only scroll if: we've pulled to refresh, it's
+             * positioned correctly
+             */
+            if (scrollLvToEdge && getState() != State.MANUAL_REFRESHING) {
+                mRefreshableView.scrollToPosition(selection);
+                setHeaderScroll(scrollToHeight);
+            }
+        }
+
+        // Finally, call up to super
+        super.onReset();
+    }
+
+    @Override
+    protected LoadingLayoutProxy createLoadingLayoutProxy(final boolean includeStart, final boolean includeEnd) {
+        LoadingLayoutProxy proxy = super.createLoadingLayoutProxy(includeStart, includeEnd);
+
+        if (mURecyclerViewExtrasEnabled) {
+            final Mode mode = getMode();
+
+            if (includeStart && mode.showHeaderLoadingLayout()) {
+                proxy.addLayout(mHeaderLoadingView);
+            }
+            if (includeEnd && mode.showFooterLoadingLayout()) {
+                proxy.addLayout(mFooterLoadingView);
+            }
+        }
+
+        return proxy;
+    }
+
+    @Override
+    protected WrapRecyclerView createRefreshableView(Context context, AttributeSet attrs) {
+        WrapRecyclerView recyclerView = new InternalWrapRecyclerView(context, attrs);
+        recyclerView.setId(R.id.ultimate_recycler_view);
         return recyclerView;
+    }
+
+    private void init(Context context, AttributeSet attrs) {
+
+        // Styleables from XML
+        TypedArray ua = context.obtainStyledAttributes(attrs, R.styleable.UltimateRecyclerView);
+        mURecyclerViewExtrasEnabled = ua.getBoolean(R.styleable.UltimateRecyclerView_ptrURecyclerViewExtrasEnabled, true);
+        ua.recycle();
+
+        // Styleables from XML
+        TypedArray pa = context.obtainStyledAttributes(attrs, com.handmark.pulltorefresh.library.R.styleable.PullToRefresh);
+        if (mURecyclerViewExtrasEnabled) {
+            final FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT,
+                    FrameLayout.LayoutParams.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL);
+            final ViewGroup.LayoutParams hlp = new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT);
+
+            // Create Loading Views ready for use later
+            mLvHeaderLoadingFrame = new FrameLayout(getContext());
+            mHeaderLoadingView = createLoadingLayout(getContext(), Mode.PULL_FROM_START, pa);
+            mHeaderLoadingView.setVisibility(View.GONE);
+            mLvHeaderLoadingFrame.addView(mHeaderLoadingView, lp);
+            mLvHeaderLoadingFrame.setLayoutParams(hlp);
+            mRefreshableView.addHeaderView(mLvHeaderLoadingFrame);
+
+            mLvFooterLoadingFrame = new FrameLayout(getContext());
+            mFooterLoadingView = createLoadingLayout(getContext(), Mode.PULL_FROM_END, pa);
+            mFooterLoadingView.setVisibility(View.GONE);
+            mLvFooterLoadingFrame.addView(mFooterLoadingView, lp);
+            mLvFooterLoadingFrame.setLayoutParams(hlp);
+
+            pa.recycle();
+
+        }
+    }
+
+    @Override
+    protected void handleStyledAttributes(TypedArray a) {
+        super.handleStyledAttributes(a);
+        /**
+         * If the value for Scrolling While Refreshing hasn't been
+         * explicitly set via XML, enable Scrolling While Refreshing.
+         */
+        if (!a.hasValue(com.handmark.pulltorefresh.library.R.styleable.PullToRefresh_ptrScrollingWhileRefreshingEnabled)) {
+            setScrollingWhileRefreshingEnabled(true);
+        }
+    }
+
+    @Override
+    public void setHeaderLayout(LoadingLayoutBase headerLayout) {
+        super.setHeaderLayout(headerLayout);
+
+        try {
+            Constructor c = headerLayout.getClass().getDeclaredConstructor(new Class[]{Context.class});
+            LoadingLayoutBase mHeaderLayout = (LoadingLayoutBase)c.newInstance(new Object[]{getContext()});
+            if(null != mHeaderLayout) {
+//                mRefreshableView.removeHeaderView(mLvHeaderLoadingFrame);
+                final FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT,
+                        FrameLayout.LayoutParams.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL);
+
+                mLvHeaderLoadingFrame = new FrameLayout(getContext());
+                mHeaderLoadingView = mHeaderLayout;
+                mHeaderLoadingView.setVisibility(View.GONE);
+                mLvHeaderLoadingFrame.addView(mHeaderLoadingView, lp);
+                mRefreshableView.addHeaderView(mLvHeaderLoadingFrame);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void setFooterLayout(LoadingLayoutBase footerLayout) {
+        super.setFooterLayout(footerLayout);
+
+        try {
+            Constructor c = footerLayout.getClass().getDeclaredConstructor(new Class[]{Context.class});
+            LoadingLayoutBase mFooterLayout = (LoadingLayoutBase)c.newInstance(new Object[]{getContext()});
+            if(null != mFooterLayout) {
+//                mRefreshableView.removeFooterView(mLvFooterLoadingFrame);
+                final FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT,
+                        FrameLayout.LayoutParams.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL);
+
+                mLvFooterLoadingFrame = new FrameLayout(getContext());
+                mFooterLoadingView = mFooterLayout;
+                mFooterLoadingView.setVisibility(View.GONE);
+                mLvFooterLoadingFrame.addView(mFooterLoadingView, lp);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -147,6 +406,45 @@ public class UltimateRecyclerView extends PullToRefreshBase<WrapRecyclerView> {
                 .getChildCount() - 1);
         return lastVisibleChild != null ? mRefreshableView
                 .getChildAdapterPosition(lastVisibleChild) : -1;
+    }
+
+    protected class InternalWrapRecyclerView extends WrapRecyclerView {
+
+        private boolean mAddedLvFooter = false;
+
+        public InternalWrapRecyclerView(Context context, AttributeSet attrs) {
+            super(context, attrs);
+        }
+
+        @Override
+        protected void dispatchDraw(Canvas canvas) {
+            try {
+                super.dispatchDraw(canvas);
+            } catch (IndexOutOfBoundsException e) {
+                e.printStackTrace();
+            }
+        }
+
+        @Override
+        public boolean dispatchTouchEvent(MotionEvent ev) {
+            try {
+                return super.dispatchTouchEvent(ev);
+            } catch (IndexOutOfBoundsException e) {
+                e.printStackTrace();
+                return false;
+            }
+        }
+
+        @Override
+        public void setAdapter(Adapter adapter) {
+            // Add the Footer View at the last possible moment
+            if (null != mLvFooterLoadingFrame && !mAddedLvFooter) {
+                addFooterView(mLvFooterLoadingFrame);
+                mAddedLvFooter = true;
+            }
+            super.setAdapter(adapter);
+        }
+
     }
 
 }

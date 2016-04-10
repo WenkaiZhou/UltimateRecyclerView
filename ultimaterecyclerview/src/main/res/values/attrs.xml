@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <declare-styleable name="UltimateRecyclerView">
+
+        <!--
+        	Whether UltimateRecyclerView has it's extras enabled. This allows the user to be
+        	able to scroll while refreshing, and behaves better. It acheives this by adding
+        	Header and/or Footer Views to the WrapRecyclerView.
+        -->
+        <attr name="ptrURecyclerViewExtrasEnabled" format="reference|boolean" />
+    </declare-styleable>
+
+</resources>
