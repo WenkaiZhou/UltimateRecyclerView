@@ -28,6 +28,8 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         mUltimateRecyclerView = (UltimateRecyclerView) this.findViewById(R.id.main_act_urv);
+        mUltimateRecyclerView.setHeaderLayout(new JingDongHeaderLayout(this));
+        mUltimateRecyclerView.setFooterLayout(new JingDongHeaderLayout(this, PullToRefreshBase.Mode.PULL_FROM_END));
         initRecyclerView();
         initEvent();
     }
@@ -58,7 +60,7 @@ public class MainActivity extends AppCompatActivity {
         protected Void doInBackground(Void... params) {
             // Simulates a background job.
             try {
-                Thread.sleep(2000);
+                Thread.sleep(3000);
             } catch (InterruptedException e) {
             }
             return null;
