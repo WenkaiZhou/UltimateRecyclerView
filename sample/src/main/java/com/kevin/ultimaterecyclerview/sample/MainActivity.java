@@ -7,12 +7,15 @@ import android.os.Bundle;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.GridLayoutManager;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.handmark.pulltorefresh.library.PullToRefreshBase;
+import com.kevin.loopview.AdLoopView;
 import com.kevin.ultimaterecyclerview.UltimateRecyclerView;
 import com.kevin.ultimaterecyclerview.sample.adapter.HomeProductAdapter;
 import com.kevin.ultimaterecyclerview.sample.bean.HomeProduct;
@@ -29,7 +32,8 @@ public class MainActivity extends AppCompatActivity {
     WrapRecyclerView mWrapRecyclerView;
     HomeProductAdapter mAdapter;
     TmallFooterLayout secondFooterLayout;
-
+    // 顶部广告轮转大图
+    AdLoopView mAdLoopView;
     Context mContext;
 
     int page = 1;
@@ -44,6 +48,9 @@ public class MainActivity extends AppCompatActivity {
         initEvent();
     }
 
+    /**
+     * 初始化View
+     */
     private void initViews() {
         mUltimateRecyclerView = (UltimateRecyclerView) this.findViewById(R.id.main_act_urv);
         mUltimateRecyclerView.setHeaderLayout(new TmallHeaderLayout(this));
@@ -53,6 +60,48 @@ public class MainActivity extends AppCompatActivity {
         initRecyclerView();
 
         new GetDataTask(false).execute();
+    }
+
+    /**
+     * 初始化 RecyclerView
+     *
+     * @return void
+     */
+    private void initRecyclerView() {
+        mWrapRecyclerView = mUltimateRecyclerView.getRefreshableView();
+        mWrapRecyclerView.setLayoutManager(new GridLayoutManager(mContext, 2));
+        mWrapRecyclerView.setItemAnimator(new DefaultItemAnimator());
+        mAdapter = new HomeProductAdapter(this);
+        mWrapRecyclerView.setAdapter(mAdapter);
+
+        // 添加头部广告轮播
+        initLoopView();
+
+        // 添加头部功能选择，这里用一张图片模拟实现。
+        ImageView functionImage = new ImageView(this);
+        ViewGroup.LayoutParams functionParams = new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        functionImage.setLayoutParams(functionParams);
+        functionImage.setBackgroundResource(R.mipmap.tm_picture1);
+        mWrapRecyclerView.addHeaderView(functionImage);
+    }
+
+    /**
+     * 初始化LoopView
+     *
+     * 这里使用的是LoopView开源项目，项目地址：https://github.com/xuehuayous/Android-LoopView
+     *
+     * @return void
+     */
+    private void initLoopView() {
+        LayoutInflater inflater = LayoutInflater.from(this);
+        FrameLayout layout = (FrameLayout) inflater.inflate(R.layout.recycler_header, null);
+        mAdLoopView = (AdLoopView) layout.findViewById(R.id.main_act_alv);
+        mWrapRecyclerView.addHeaderView(layout);
+
+        // 初始化RotateView数据
+        String json = LocalFileUtils.getStringFormAsset(this, "loopview.json");
+        mAdLoopView.refreshData(json);
+        mAdLoopView.startAutoLoop();
     }
 
     private void initEvent() {
@@ -122,33 +171,5 @@ public class MainActivity extends AppCompatActivity {
 
             super.onPostExecute(result);
         }
-    }
-
-    /**
-     * 初始化 RecyclerView
-     *
-     * @return void
-     */
-    private void initRecyclerView() {
-        mWrapRecyclerView = mUltimateRecyclerView.getRefreshableView();
-//        mWrapRecyclerView.setLayoutManager(new LinearLayoutManager(this));
-        mWrapRecyclerView.setLayoutManager(new GridLayoutManager(mContext, 2));
-        mWrapRecyclerView.setItemAnimator(new DefaultItemAnimator());
-        mAdapter = new HomeProductAdapter(this);
-        mWrapRecyclerView.setAdapter(mAdapter);
-
-        // 添加头部广告轮播，这里用一张图片模拟实现。
-        ImageView loopViewImage = new ImageView(this);
-        ViewGroup.LayoutParams loopViewParams = new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        loopViewImage.setLayoutParams(loopViewParams);
-        loopViewImage.setBackgroundResource(R.mipmap.tm_picture0);
-        mWrapRecyclerView.addHeaderView(loopViewImage);
-
-        // 添加头部功能选择，这里用一张图片模拟实现。
-        ImageView functionImage = new ImageView(this);
-        ViewGroup.LayoutParams functionParams = new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        functionImage.setLayoutParams(functionParams);
-        functionImage.setBackgroundResource(R.mipmap.tm_picture1);
-        mWrapRecyclerView.addHeaderView(functionImage);
     }
 }

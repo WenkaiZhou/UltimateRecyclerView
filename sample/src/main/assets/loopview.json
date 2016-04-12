@@ -1,0 +1,28 @@
+{
+    "items": [
+        {
+            "id": "0",
+            "descText": "",
+            "imgUrl": "https://raw.githubusercontent.com/xuehuayous/UltimateRecyclerView/master/images/tm_loopview1.png",
+            "link":""
+        },
+        {
+            "id": "1",
+            "descText": "",
+            "imgUrl": "https://raw.githubusercontent.com/xuehuayous/UltimateRecyclerView/master/images/tm_loopview2.png",
+            "link":"http://club.autohome.com.cn/bbs/thread-c-614-46840565-1.html#pvareaid=2023107"
+        },
+        {
+            "id": "2",
+            "descText": "",
+            "imgUrl": "https://raw.githubusercontent.com/xuehuayous/UltimateRecyclerView/master/images/tm_loopview3.png",
+            "link":""
+        },
+        {
+            "id": "3",
+            "descText": "",
+            "imgUrl": "https://raw.githubusercontent.com/xuehuayous/UltimateRecyclerView/master/images/tm_loopview4.png",
+            "link":""
+        }
+    ]
+}

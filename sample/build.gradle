@@ -27,5 +27,7 @@ dependencies {
     compile 'com.google.code.gson:gson:2.2.4'
     // Glide
     compile 'com.github.bumptech.glide:glide:3.7.0'
+    // 轮转大图控件
+    compile 'com.kevin:loopview:1.0.6'
     compile project(':ultimaterecyclerview')
 }
