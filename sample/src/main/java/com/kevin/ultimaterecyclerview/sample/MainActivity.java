@@ -30,6 +30,7 @@ public class MainActivity extends AppCompatActivity {
         mUltimateRecyclerView = (UltimateRecyclerView) this.findViewById(R.id.main_act_urv);
         mUltimateRecyclerView.setHeaderLayout(new JingDongHeaderLayout(this));
         mUltimateRecyclerView.setFooterLayout(new JingDongHeaderLayout(this, PullToRefreshBase.Mode.PULL_FROM_END));
+        mUltimateRecyclerView.setSecondFooterLayout(new JingDongHeaderLayout(this, PullToRefreshBase.Mode.PULL_FROM_END));
         initRecyclerView();
         initEvent();
     }
