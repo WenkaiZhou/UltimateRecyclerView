@@ -8,6 +8,9 @@
 
 - [xuehuayous/WrapRecyclerView](https://github.com/xuehuayous/WrapRecyclerView) 对RecyclerView的简单封装使其可以方便添加头部尾部。
 
+<br/>
+<div align="center"><img src="https://raw.githubusercontent.com/xuehuayous/UltimateRecyclerView/master/sample.gif" /></div>
+
 ## License
 
     Copyright 2016, Kevin.zhou
