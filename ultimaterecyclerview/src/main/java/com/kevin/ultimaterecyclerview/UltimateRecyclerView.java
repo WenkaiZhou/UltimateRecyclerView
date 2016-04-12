@@ -11,6 +11,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
+import android.widget.Toast;
 
 import com.handmark.pulltorefresh.library.LoadingLayoutBase;
 import com.handmark.pulltorefresh.library.LoadingLayoutProxy;
@@ -41,6 +42,8 @@ public class UltimateRecyclerView extends PullToRefreshBase<WrapRecyclerView> {
     private FrameLayout mSvSecondFooterLoadingFrame;
 
     private boolean mURecyclerViewExtrasEnabled;
+
+    private OnLastItemVisibleListener mOnLastItemVisibleListener;
 
     public UltimateRecyclerView(Context context) {
         super(context);
@@ -317,6 +320,10 @@ public class UltimateRecyclerView extends PullToRefreshBase<WrapRecyclerView> {
         mSvSecondFooterLoadingFrame.addView(secondFooterLayout, lp);
     }
 
+    public final void setOnLastItemVisibleListener(OnLastItemVisibleListener listener) {
+        mOnLastItemVisibleListener = listener;
+    }
+
     @Override
     protected boolean isReadyForPullStart() {
         return isFirstItemVisible();
@@ -344,15 +351,12 @@ public class UltimateRecyclerView extends PullToRefreshBase<WrapRecyclerView> {
                 Log.d(LOG_TAG, "isFirstItemVisible. Empty View.");
             }
             return true;
-
         } else {
             // 第一个条目完全展示,可以刷新
             if (getFirstVisiblePosition() == 0) {
-                return mRefreshableView.getChildAt(0).getTop() >= mRefreshableView
-                        .getTop();
+                return mRefreshableView.getChildAt(0).getTop() >= mRefreshableView.getTop();
             }
         }
-
         return false;
     }
 
@@ -419,6 +423,7 @@ public class UltimateRecyclerView extends PullToRefreshBase<WrapRecyclerView> {
     protected class InternalWrapRecyclerView extends WrapRecyclerView {
 
         private boolean mAddedSvFooter = false;
+        private int mTmplastVisiblePosition;
 
         public InternalWrapRecyclerView(Context context, AttributeSet attrs) {
             super(context, attrs);
@@ -452,6 +457,46 @@ public class UltimateRecyclerView extends PullToRefreshBase<WrapRecyclerView> {
                 mAddedSvFooter = true;
             }
             super.setAdapter(adapter);
+        }
+
+        @Override
+        public void onScrolled(int dx, int dy) {
+            super.onScrolled(dx, dy);
+            boolean lastItemVisible = isLastItemVisible();
+            if(lastItemVisible) {
+                mOnLastItemVisibleListener.onLastItemVisible();
+            }
+        }
+
+        /**
+         * @Description: 判断最后一个条目是否能够可见
+         *
+         * @return boolean:
+         * @version 1.0
+         * @date 2016-4-12 14:51:04
+         * @Author zhou.wenkai
+         */
+        private boolean isLastItemVisible() {
+            final RecyclerView.Adapter<?> adapter = getRefreshableView().getAdapter();
+            // 如果未设置Adapter,都没有添加自然不可见
+            if(null == adapter) {
+                return false;
+            } else {
+                // 最后一个条目View是否展示
+                int lastVisiblePosition = getLastVisiblePosition();
+
+                // 最后一个显示出来了
+                if(lastVisiblePosition == mRefreshableView.getAdapter().getItemCount() - 2) {
+                    // 说明最后一个刚刚显示出来
+                    // 这里不希望和PullToRefreshListView中一样只要最后一个显示,每动一下就促发一次回调
+                    if(lastVisiblePosition == mTmplastVisiblePosition + 1) {
+                        mTmplastVisiblePosition = lastVisiblePosition;
+                        return true;
+                    }
+                }
+                mTmplastVisiblePosition = lastVisiblePosition;
+            }
+            return false;
         }
 
     }

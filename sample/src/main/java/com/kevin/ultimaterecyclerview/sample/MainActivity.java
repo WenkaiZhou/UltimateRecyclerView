@@ -5,6 +5,8 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
+import android.util.Log;
+import android.widget.Toast;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -45,6 +47,14 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onPullUpToRefresh(PullToRefreshBase<WrapRecyclerView> refreshView) {
                 new GetDataTask(false).execute();
+            }
+        });
+
+        mUltimateRecyclerView.setOnLastItemVisibleListener(new PullToRefreshBase.OnLastItemVisibleListener() {
+            @Override
+            public void onLastItemVisible() {
+                Toast.makeText(MainActivity.this, "最后一个可见啦", Toast.LENGTH_SHORT).show();
+                Log.i("aa", "最后一个可见啦");
             }
         });
     }
