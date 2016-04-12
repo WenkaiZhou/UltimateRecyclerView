@@ -1,20 +1,24 @@
 package com.kevin.ultimaterecyclerview.sample;
 
+import android.content.Context;
 import android.os.AsyncTask;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.DefaultItemAnimator;
-import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.GridLayoutManager;
 import android.util.Log;
-import android.widget.Toast;
+import android.view.ViewGroup;
+import android.widget.ImageView;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.handmark.pulltorefresh.library.PullToRefreshBase;
 import com.kevin.ultimaterecyclerview.UltimateRecyclerView;
-import com.kevin.ultimaterecyclerview.sample.adapter.HomeFunctionAdapter;
-import com.kevin.ultimaterecyclerview.sample.bean.HomeFunction;
+import com.kevin.ultimaterecyclerview.sample.adapter.HomeProductAdapter;
+import com.kevin.ultimaterecyclerview.sample.bean.HomeProduct;
 import com.kevin.ultimaterecyclerview.sample.util.LocalFileUtils;
+import com.kevin.ultimaterecyclerview.sample.view.TmallFooterLayout;
+import com.kevin.ultimaterecyclerview.sample.view.TmallHeaderLayout;
 import com.kevin.wraprecyclerview.WrapRecyclerView;
 
 import java.util.List;
@@ -23,55 +27,69 @@ public class MainActivity extends AppCompatActivity {
 
     UltimateRecyclerView mUltimateRecyclerView;
     WrapRecyclerView mWrapRecyclerView;
-    HomeFunctionAdapter mAdapter;
+    HomeProductAdapter mAdapter;
+    TmallFooterLayout secondFooterLayout;
+
+    Context mContext;
+
+    int page = 1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        mUltimateRecyclerView = (UltimateRecyclerView) this.findViewById(R.id.main_act_urv);
-        mUltimateRecyclerView.setHeaderLayout(new JingDongHeaderLayout(this));
-        mUltimateRecyclerView.setFooterLayout(new JingDongHeaderLayout(this, PullToRefreshBase.Mode.PULL_FROM_END));
-        mUltimateRecyclerView.setSecondFooterLayout(new JingDongHeaderLayout(this, PullToRefreshBase.Mode.PULL_FROM_END));
-        initRecyclerView();
+        mContext = this.getApplicationContext();
+
+        initViews();
         initEvent();
     }
 
-    private void initEvent() {
-        mUltimateRecyclerView.setOnRefreshListener(new PullToRefreshBase.OnRefreshListener2<WrapRecyclerView>() {
-            @Override
-            public void onPullDownToRefresh(PullToRefreshBase<WrapRecyclerView> refreshView) {
-                new GetDataTask(true).execute();
-            }
+    private void initViews() {
+        mUltimateRecyclerView = (UltimateRecyclerView) this.findViewById(R.id.main_act_urv);
+        mUltimateRecyclerView.setHeaderLayout(new TmallHeaderLayout(this));
+        secondFooterLayout = new TmallFooterLayout(this);
+        mUltimateRecyclerView.setSecondFooterLayout(secondFooterLayout);
 
+        initRecyclerView();
+
+        new GetDataTask(false).execute();
+    }
+
+    private void initEvent() {
+        // 设置刷新监听
+        mUltimateRecyclerView.setOnRefreshListener(new PullToRefreshBase.OnRefreshListener<WrapRecyclerView>() {
             @Override
-            public void onPullUpToRefresh(PullToRefreshBase<WrapRecyclerView> refreshView) {
-                new GetDataTask(false).execute();
+            public void onRefresh(PullToRefreshBase<WrapRecyclerView> refreshView) {
+                new GetDataTask(true).execute();
             }
         });
 
+        // 设置最后一个条目可见监听
         mUltimateRecyclerView.setOnLastItemVisibleListener(new PullToRefreshBase.OnLastItemVisibleListener() {
             @Override
             public void onLastItemVisible() {
-                Toast.makeText(MainActivity.this, "最后一个可见啦", Toast.LENGTH_SHORT).show();
-                Log.i("aa", "最后一个可见啦");
+                boolean hasMoreData = secondFooterLayout.isHasMoreData();
+                Log.i("", "是否还有更多数据 " + hasMoreData);
+                if(hasMoreData) {
+                    new GetDataTask(false).execute();
+                }
             }
         });
     }
 
     private class GetDataTask extends AsyncTask<Void, Void, Void> {
 
-        boolean mIsPullDown;
+        boolean isRefresh;
 
-        public GetDataTask(boolean isPullDown) {
-            mIsPullDown = isPullDown;
+        public GetDataTask(boolean isRefresh) {
+            this.isRefresh = isRefresh;
         }
 
         @Override
         protected Void doInBackground(Void... params) {
             // Simulates a background job.
             try {
-                Thread.sleep(3000);
+                Thread.sleep(2000);
             } catch (InterruptedException e) {
             }
             return null;
@@ -79,14 +97,25 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         protected void onPostExecute(Void result) {
-            if(mIsPullDown) {
-                initRecyclerData();
-            } else {
-                String json = LocalFileUtils.getStringFormAsset(MainActivity.this, "homefunction1.json");
-                List<HomeFunction> functionList = new Gson().fromJson(json, new TypeToken<List<HomeFunction>>() {
-                }.getType());
+            if(isRefresh) {
+                page = 1;
+            }
+            Log.i("", "当前请求的是第 " + page + " 页数据");
+            String json = LocalFileUtils.getStringFormAsset(MainActivity.this, "homeproduct"+ page +".json");
+            List<HomeProduct> functionList = new Gson().fromJson(json, new TypeToken<List<HomeProduct>>() {
+            }.getType());
+            if(functionList.size() < 5) {
+                // 每个分页加载数据少于5个,说明数据加载完成
+                secondFooterLayout.setNoData();
+            }
+
+            if(isRefresh) { // 如果输刷新,重新设置数据
+                secondFooterLayout.setHasData();
+                mAdapter.setItemLists(functionList);
+            } else {    // 如果加载更多,添加数据到尾部
                 mAdapter.addToLast(functionList);
             }
+            page++;
 
             // Call onRefreshComplete when the list has been refreshed.
             mUltimateRecyclerView.onRefreshComplete();
@@ -102,23 +131,24 @@ public class MainActivity extends AppCompatActivity {
      */
     private void initRecyclerView() {
         mWrapRecyclerView = mUltimateRecyclerView.getRefreshableView();
-
-        mWrapRecyclerView.setLayoutManager(new LinearLayoutManager(this));
-//        mWrapRecyclerView.setLayoutManager(new GridLayoutManager(mActivity, 3));
+//        mWrapRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+        mWrapRecyclerView.setLayoutManager(new GridLayoutManager(mContext, 2));
         mWrapRecyclerView.setItemAnimator(new DefaultItemAnimator());
-        mAdapter = new HomeFunctionAdapter(this);
+        mAdapter = new HomeProductAdapter(this);
         mWrapRecyclerView.setAdapter(mAdapter);
 
-        initRecyclerData();
-    }
+        // 添加头部广告轮播，这里用一张图片模拟实现。
+        ImageView loopViewImage = new ImageView(this);
+        ViewGroup.LayoutParams loopViewParams = new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        loopViewImage.setLayoutParams(loopViewParams);
+        loopViewImage.setBackgroundResource(R.mipmap.tm_picture0);
+        mWrapRecyclerView.addHeaderView(loopViewImage);
 
-    /**
-     * 初始化 RecyclerView数据
-     */
-    private void initRecyclerData() {
-        String json = LocalFileUtils.getStringFormAsset(this, "homefunction.json");
-        List<HomeFunction> functionList = new Gson().fromJson(json, new TypeToken<List<HomeFunction>>() {
-        }.getType());
-        mAdapter.setItemLists(functionList);
+        // 添加头部功能选择，这里用一张图片模拟实现。
+        ImageView functionImage = new ImageView(this);
+        ViewGroup.LayoutParams functionParams = new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        functionImage.setLayoutParams(functionParams);
+        functionImage.setBackgroundResource(R.mipmap.tm_picture1);
+        mWrapRecyclerView.addHeaderView(functionImage);
     }
 }

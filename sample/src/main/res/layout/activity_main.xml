@@ -8,6 +8,6 @@
         android:id="@+id/main_act_urv"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        ptr:ptrMode="both">
+        ptr:ptrMode="pullFromStart">
     </com.kevin.ultimaterecyclerview.UltimateRecyclerView>
 </RelativeLayout>
