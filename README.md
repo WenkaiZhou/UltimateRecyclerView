@@ -16,7 +16,7 @@
 如果您的项目使用 Gradle 构建, 只需要在您的`build.gradle`文件添加下面一行到 `dependencies` :
 
 ```
-	compile 'com.kevin:ultimaterecyclerview:1.0.1'
+	compile 'com.kevin:ultimaterecyclerview:1.0.2'
 ```
 
 ## License
