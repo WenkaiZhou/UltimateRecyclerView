@@ -461,8 +461,7 @@ public class UltimateRecyclerView extends PullToRefreshBase<WrapRecyclerView> {
         @Override
         public void onScrolled(int dx, int dy) {
             super.onScrolled(dx, dy);
-            boolean lastItemVisible = isLastItemVisible();
-            if(lastItemVisible) {
+            if(null != mOnLastItemVisibleListener && isLastItemVisible()) {
                 mOnLastItemVisibleListener.onLastItemVisible();
             }
         }
